@@ -8,7 +8,7 @@ import { Gift, User } from './types';
 import { Feed } from './components/Feed';
 import { AddGift } from './components/AddGift';
 import { CirculationGraph } from './components/CirculationGraph';
-import { Home, PlusCircle, Network } from 'lucide-react';
+import { Home, PlusCircle, Network, AlertCircle, X } from 'lucide-react';
 import { cn } from './utils';
 import {
   fetchUsers,
@@ -28,6 +28,7 @@ export default function App() {
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -38,8 +39,9 @@ export default function App() {
         ]);
         setUsers(fetchedUsers);
         setGifts(fetchedGifts);
-      } catch (err) {
+      } catch (err: any) {
         console.error('データの読み込みに失敗しました:', err);
+        setError(`データの読み込みに失敗しました: ${err.message || '不明なエラー'}`);
       } finally {
         setLoading(false);
       }
@@ -65,8 +67,10 @@ export default function App() {
       const newGift = await createGift(sender.id, receiver.id, item);
       setGifts(prev => [newGift, ...prev]);
       setActiveTab('feed');
-    } catch (err) {
+      setError(null);
+    } catch (err: any) {
       console.error('ギフトの追加に失敗しました:', err);
+      setError(`ギフトの追加に失敗しました: ${err.message || '不明なエラー'}`);
     }
   };
 
@@ -143,6 +147,22 @@ export default function App() {
       <header className="bg-white px-6 py-4 sticky top-0 z-10 shadow-sm">
         <h1 className="text-xl font-bold text-gray-900 tracking-tight">ギフトサークル</h1>
       </header>
+
+      {error && (
+        <div className="bg-red-50 border-b border-red-100 px-4 py-3 flex items-start gap-3 animate-in fade-in slide-in-from-top duration-300">
+          <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm text-red-800 font-medium">エラーが発生しました</p>
+            <p className="text-xs text-red-600 mt-0.5 break-all">{error}</p>
+          </div>
+          <button 
+            onClick={() => setError(null)}
+            className="text-red-400 hover:text-red-500 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto relative">
