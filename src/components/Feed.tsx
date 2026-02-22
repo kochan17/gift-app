@@ -7,10 +7,10 @@ import { motion, AnimatePresence } from 'motion/react';
 interface FeedProps {
   gifts: Gift[];
   users: User[];
-  onEditGift: (giftId: string, senderName: string, receiverName: string, item: string) => void;
-  onDeleteGift: (giftId: string) => void;
-  onAddComment: (giftId: string, userName: string, text: string) => void;
-  onAddTip: (giftId: string) => void;
+  onEditGift: (giftId: string, senderName: string, receiverName: string, item: string) => Promise<void> | void;
+  onDeleteGift: (giftId: string) => Promise<void> | void;
+  onAddComment: (giftId: string, userName: string, text: string) => Promise<void> | void;
+  onAddTip: (giftId: string) => Promise<void> | void;
 }
 
 export function Feed({ gifts, users, onEditGift, onDeleteGift, onAddComment, onAddTip }: FeedProps) {
@@ -27,6 +27,7 @@ export function Feed({ gifts, users, onEditGift, onDeleteGift, onAddComment, onA
   const [commentText, setCommentText] = useState('');
   const [commenterName, setCommenterName] = useState('');
   const [floatingCoins, setFloatingCoins] = useState<{id: number, giftId: string}[]>([]);
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   const getUser = (id: string) => users.find((u) => u.id === id);
 
@@ -70,10 +71,15 @@ export function Feed({ gifts, users, onEditGift, onDeleteGift, onAddComment, onA
     }, 1000);
   };
 
-  const submitComment = (giftId: string) => {
+  const submitComment = async (giftId: string) => {
     if (!commenterName.trim() || !commentText.trim()) return;
-    onAddComment(giftId, commenterName, commentText);
-    setCommentText('');
+    setSubmittingComment(true);
+    try {
+      await onAddComment(giftId, commenterName, commentText);
+      setCommentText('');
+    } finally {
+      setSubmittingComment(false);
+    }
   };
 
   return (
@@ -277,10 +283,13 @@ export function Feed({ gifts, users, onEditGift, onDeleteGift, onAddComment, onA
                           />
                           <button
                             onClick={() => submitComment(gift.id)}
-                            disabled={!commenterName.trim() || !commentText.trim()}
+                            disabled={submittingComment || !commenterName.trim() || !commentText.trim()}
                             className="bg-[#FF6321] text-white p-2 rounded-xl disabled:opacity-50 transition-transform active:scale-95"
                           >
-                            <Send className="w-4 h-4" />
+                            {submittingComment
+                              ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                              : <Send className="w-4 h-4" />
+                            }
                           </button>
                         </div>
                       </div>

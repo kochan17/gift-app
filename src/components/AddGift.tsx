@@ -5,25 +5,31 @@ import { cn } from '../utils';
 
 interface AddGiftProps {
   users: User[];
-  onAddGift: (senderName: string, receiverName: string, item: string) => void;
+  onAddGift: (senderName: string, receiverName: string, item: string) => Promise<void> | void;
 }
 
 export function AddGift({ users, onAddGift }: AddGiftProps) {
   const [senderName, setSenderName] = useState('');
   const [receiverName, setReceiverName] = useState('');
   const [item, setItem] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!senderName.trim() || !receiverName.trim() || !item.trim()) return;
     if (senderName.trim().toLowerCase() === receiverName.trim().toLowerCase()) {
       alert("自分自身にギフトを贈ることはできません！");
       return;
     }
-    onAddGift(senderName, receiverName, item);
-    setSenderName('');
-    setReceiverName('');
-    setItem('');
+    setSubmitting(true);
+    try {
+      await onAddGift(senderName, receiverName, item);
+      setSenderName('');
+      setReceiverName('');
+      setItem('');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -76,11 +82,15 @@ export function AddGift({ users, onAddGift }: AddGiftProps) {
 
           <button
             type="submit"
-            disabled={!senderName.trim() || !receiverName.trim() || !item.trim() || senderName.trim().toLowerCase() === receiverName.trim().toLowerCase()}
+            disabled={submitting || !senderName.trim() || !receiverName.trim() || !item.trim() || senderName.trim().toLowerCase() === receiverName.trim().toLowerCase()}
             className="mt-auto w-full bg-[#FF6321] text-white rounded-full py-4 font-semibold text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
           >
-            <Send className="w-5 h-5" />
-            記録する
+            {submitting ? (
+              <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+            {submitting ? '記録中...' : '記録する'}
           </button>
         </form>
       </div>
